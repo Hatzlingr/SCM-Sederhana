@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SCM System - Tailwind CSS & Alpine.js</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="app.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <style>
+      /* Menambahkan kembali style untuk x-cloak agar tidak ada 'flicker' saat Alpine.js dimuat */
+      [x-cloak] {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body x-data="scmApp()" x-init="init()" x-cloak class="bg-gray-50">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+      <div
+        x-show="!currentUser"
+        class="flex justify-center items-center min-h-screen"
+      >
+        <div class="w-full max-w-md">
+          <div
+            class="bg-white shadow-xl border-t-4 border-pink-500 rounded-lg fade-in"
+          >
+            <div class="p-8 sm:p-10">
+              <h1 class="text-3xl text-center mb-6 font-bold text-gray-800">
+                🏪 Manajemen Stok
+              </h1>
+              <form @submit.prevent="login" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700"
+                    >Username</label
+                  >
+                  <input
+                    type="text"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    x-model="loginForm.username"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    x-model="loginForm.password"
+                    required
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    class="inline-block w-full bg-pink-500 text-white hover:bg-white hover:text-pink-500 focus:ring-4 focus:outline-none focus:ring-pink-300 font-medium rounded-lg text-base px-8 py-4 md:text-lg md:px-10 md:py-5 transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg"
+                  >
+                    Login
+                  </button>
+                </div>
+              </form>
+              <div
+                x-show="loginError"
+                x-text="loginError"
+                class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md mt-4"
+              ></div>
+              <div class="mt-6 text-center text-gray-500 text-sm">
+                <p class="mb-1"><b>Demo Accounts:</b></p>
+                <p class="mb-0">Admin: admin / admin</p>
+                <p>Toko: toko / toko</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div x-show="currentUser" class="fade-in">
+        <header class="bg-white shadow-md rounded-lg mb-6">
+          <nav class="px-6 py-3">
+            <div class="flex items-center justify-between">
+              <h1 class="text-2xl font-bold text-gray-800">
+                <span
+                  class="text-pink-500"
+                  x-text="currentUser.role.toUpperCase()"
+                ></span>
+                <span>Dashboard</span>
+              </h1>
+              <div class="flex items-center">
+                <div class="text-right mr-4">
+                  <div>
+                    <a
+                      class="flex items-center px-4 py-2 text-sm text-red-500"
+                      href="#"
+                      @click.prevent="logout()"
+                      ><i class="bi bi-box-arrow-right mr-2"></i>Logout</a
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </header>
+
+        <div x-show="currentUser && currentUser.role === 'admin'">
+          <div class="bg-white rounded-lg shadow-md">
+            <div class="p-4 md:p-6">
+              <section
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+              >
+                <div class="bg-gray-100 p-4 rounded-lg text-center shadow-sm">
+                  <div
+                    class="text-4xl font-bold text-blue-600"
+                    x-text="totalGudangQty()"
+                  ></div>
+                  <div class="text-sm text-gray-600">Unit di Gudang</div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg text-center shadow-sm">
+                  <div
+                    class="text-4xl font-bold text-green-600"
+                    x-text="totalTokoQty()"
+                  ></div>
+                  <div class="text-sm text-gray-600">Unit di Toko</div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg text-center shadow-sm">
+                  <div
+                    class="text-4xl font-bold text-yellow-600"
+                    x-text="pendingRequests().length"
+                  ></div>
+                  <div class="text-sm text-gray-600">Permintaan Pending</div>
+                </div>
+                <div class="bg-gray-100 p-4 rounded-lg text-center shadow-sm">
+                  <div
+                    class="text-4xl font-bold text-gray-700"
+                    x-text="transactionHistory.length"
+                  ></div>
+                  <div class="text-sm text-gray-600">Total Transaksi</div>
+                </div>
+              </section>
+
+              <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 space-y-6">
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-bell mr-2"></i> Permintaan Masuk
+                      </h3>
+                      <div class="divide-y divide-gray-200">
+                        <template x-if="pendingRequests().length === 0">
+                          <div class="py-3 text-gray-500 text-center">
+                            Tidak ada permintaan baru
+                          </div>
+                        </template>
+                        <template
+                          x-for="req in pendingRequests()"
+                          :key="req.id"
+                        >
+                          <div class="py-3">
+                            <div class="flex w-full justify-between">
+                              <h6
+                                class="font-semibold text-gray-800"
+                                x-text="`${req.qty} unit ${req.name}`"
+                              ></h6>
+                              <small
+                                class="text-gray-500"
+                                x-text="`by ${req.store}`"
+                              ></small>
+                            </div>
+                            <div class="mt-2">
+                              <button
+                                @click="approveRequest(req.id)"
+                                class="px-3 py-1 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
+                              >
+                                Setujui
+                              </button>
+                              <button
+                                @click="rejectRequest(req.id)"
+                                class="px-3 py-1 bg-red-500 text-white text-sm rounded-md ml-1 hover:bg-red-600"
+                              >
+                                Tolak
+                              </button>
+                            </div>
+                          </div>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-box-seam mr-2"></i> Tambah Stok Gudang
+                      </h3>
+                      <form
+                        @submit.prevent="addFromSupplier"
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                      >
+                        <div class="sm:col-span-2">
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Nama Barang</label
+                          >
+                          <input
+                            type="text"
+                            x-model="supplierForm.name"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Jumlah</label
+                          >
+                          <input
+                            type="number"
+                            min="1"
+                            x-model.number="supplierForm.qty"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Supplier</label
+                          >
+                          <select
+                            x-model="supplierForm.supplier"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                          >
+                            <option>PT Perkasa</option>
+                            <option>CV Maju Jaya</option>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                          <button
+                            type="submit"
+                            class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700"
+                          >
+                            Tambah ke Gudang
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-truck mr-2"></i> Distribusi Stok ke Toko
+                      </h3>
+                      <form
+                        @submit.prevent="distributeToStore"
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                      >
+                        <div class="sm:col-span-2">
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Pilih Barang</label
+                          >
+                          <select
+                            x-model="distributeForm.name"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          >
+                            <option value="">Pilih...</option>
+                            <template x-for="name in Object.keys(gudangStock)"
+                              ><option
+                                :value="name"
+                                x-text="`${name} (Stok: ${gudangStock[name]})`"
+                              ></option
+                            ></template>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Jumlah</label
+                          >
+                          <input
+                            type="number"
+                            min="1"
+                            x-model.number="distributeForm.qty"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Toko</label
+                          >
+                          <select
+                            x-model="distributeForm.store"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                          >
+                            <option>Toko</option>
+                          </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                          <button
+                            type="submit"
+                            class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700"
+                          >
+                            Distribusi
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <div class="lg:col-span-7 space-y-6">
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-archive mr-2"></i> Stok Gudang
+                      </h3>
+                      <ul class="divide-y divide-gray-200">
+                        <template x-if="Object.keys(gudangStock).length === 0"
+                          ><li class="py-3 text-gray-500 text-center">
+                            Gudang kosong
+                          </li></template
+                        >
+                        <template
+                          x-for="[name, qty] in Object.entries(gudangStock)"
+                          :key="name"
+                        >
+                          <li class="py-3 flex justify-between items-center">
+                            <span x-text="name"></span>
+                            <span
+                              class="px-3 py-1 bg-blue-500 text-white text-base rounded-full"
+                              x-text="qty"
+                            ></span>
+                          </li>
+                        </template>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-shop mr-2"></i> Stok Toko
+                      </h3>
+                      <ul class="divide-y divide-gray-200">
+                        <template x-if="Object.keys(tokoStock).length === 0"
+                          ><li class="py-3 text-gray-500 text-center">
+                            Toko kosong
+                          </li></template
+                        >
+                        <template
+                          x-for="[name, qty] in Object.entries(tokoStock)"
+                          :key="name"
+                        >
+                          <li class="py-3 flex justify-between items-center">
+                            <span x-text="name"></span>
+                            <span
+                              class="px-3 py-1 bg-gray-500 text-white text-base rounded-full"
+                              x-text="qty"
+                            ></span>
+                          </li>
+                        </template>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+
+        <div x-show="currentUser && currentUser.role === 'toko'">
+          <div class="bg-white rounded-lg shadow-md">
+            <div class="p-4 md:p-6">
+              <main class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5">
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-cart-plus mr-2"></i> Request Stok dari
+                        Gudang
+                      </h3>
+                      <form @submit.prevent="createRequest" class="space-y-4">
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Pilih Barang</label
+                          >
+                          <select
+                            x-model="requestForm.name"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          >
+                            <option value="">Pilih...</option>
+                            <template x-for="name in Object.keys(gudangStock)"
+                              ><option
+                                :value="name"
+                                x-text="`${name} (Stok Gudang: ${gudangStock[name]})`"
+                              ></option
+                            ></template>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-sm font-medium text-gray-700"
+                            >Jumlah Request</label
+                          >
+                          <input
+                            type="number"
+                            min="1"
+                            x-model.number="requestForm.qty"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-200"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="submit"
+                            class="w-full bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-cyan-700"
+                          >
+                            Kirim Request
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <div class="lg:col-span-7">
+                  <div class="bg-white rounded-lg shadow-sm border">
+                    <div class="p-5">
+                      <h3
+                        class="text-xl font-semibold mb-3 flex items-center text-gray-800"
+                      >
+                        <i class="bi bi-shop mr-2"></i> Stok Toko Saya
+                      </h3>
+                      <ul class="divide-y divide-gray-200">
+                        <template x-if="Object.keys(tokoStock).length === 0"
+                          ><li class="py-3 text-gray-500 text-center">
+                            Toko Anda kosong
+                          </li></template
+                        >
+                        <template
+                          x-for="[name, qty] in Object.entries(tokoStock)"
+                          :key="name"
+                        >
+                          <li
+                            class="py-3 flex justify-between items-center"
+                          >
+                            <span x-text="name"></span>
+                            <span
+                              class="px-3 py-1 bg-green-500 text-white text-base rounded-full"
+                              x-text="qty"
+                            ></span>
+                          </li>
+                        </template>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      x-show="alert.message"
+      x-transition:enter="transition ease-out duration-300"
+      x-transition:enter-start="opacity-0 transform translate-y-2"
+      x-transition:enter-end="opacity-100 transform translate-y-0"
+      x-transition:leave="transition ease-in duration-300"
+      x-transition:leave-start="opacity-100 transform translate-y-0"
+      x-transition:leave-end="opacity-0 transform translate-y-2"
+      class="fixed top-0 right-0 p-6 z-50"
+    >
+      <div class="w-full max-w-sm bg-white rounded-lg shadow-lg">
+        <div class="flex items-center justify-between p-2 border-b">
+          <div class="flex items-center">
+            <i
+              class="mr-2"
+              :class="alert.type === 'success' ? 'bi-check-circle-fill text-green-500' : 'bi-exclamation-triangle-fill text-red-500'"
+            ></i>
+            <strong
+              class="mr-auto"
+              x-text="alert.type === 'success' ? 'Success' : 'Error'"
+            ></strong>
+          </div>
+          <button
+            type="button"
+            @click="alert.message = ''"
+            class="text-gray-400 hover:text-gray-600"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="p-3" x-text="alert.message"></div>
+      </div>
+    </div>
+  </body>
+</html>
