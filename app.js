@@ -1,21 +1,27 @@
 // 1. Urusan Autentikasi
+const users = [
+  { username: "admin", password: "admin", role: "admin" },
+  { username: "toko", password: "toko", role: "toko" },
+];
+
 const authHandler = {
   login() {
-    if (
-      (this.loginForm.username === "admin" && this.loginForm.password === "admin") ||
-      (this.loginForm.username === "toko" && this.loginForm.password === "toko")
-    ) {
-      this.currentUser = {
-        name: this.loginForm.username.charAt(0).toUpperCase() + this.loginForm.username.slice(1),
-        role: this.loginForm.username,
-      };
-      this.loginError = "";
-      this.loginForm = { username: "", password: "" };
-      this.showAlert(`Selamat datang, ${this.currentUser.name}!`);
-    } else {
-      this.loginError = "Username atau password salah!";
-    }
-  },
+  const foundUser = users.find(
+    user => user.username === this.loginForm.username && user.password === this.loginForm.password
+  );
+
+  if (foundUser) {
+    this.currentUser = {
+      name: foundUser.username.charAt(0).toUpperCase() + foundUser.username.slice(1),
+      role: foundUser.role,
+    };
+    this.loginError = "";
+    this.loginForm = { username: "", password: "" };
+    this.showAlert(`Selamat datang, ${this.currentUser.name}!`);
+  } else {
+    this.loginError = "Username atau password salah!";
+  }
+},
   logout() {
     this.showAlert(`Berhasil logout.`);
     this.currentUser = null;
@@ -30,6 +36,10 @@ const adminHandler = {
       this.showAlert("Nama barang dan jumlah harus diisi!", "error");
       return;
     }
+    if (qty < 1) {
+      this.showAlert("Jumlah harus lebih dari 0!", "error");
+      return;
+    }
     this.gudangStock[name] = (this.gudangStock[name] || 0) + qty;
     this.addHistory(`Admin menambah ${qty} ${name} dari ${supplier}`);
     this.showAlert(`${qty} ${name} berhasil ditambah.`);
@@ -41,6 +51,10 @@ const adminHandler = {
     const { name, qty, store } = this.distributeForm;
     if (!name || !qty) {
       this.showAlert("Barang dan jumlah harus diisi!", "error");
+      return;
+    }
+    if (qty < 1) {
+      this.showAlert("Jumlah harus lebih dari 0!", "error");
       return;
     }
     // ✅ MENGGUNAKAN FUNGSI INTERNAL UNTUK TRANSFER
