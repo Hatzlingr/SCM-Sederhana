@@ -1,7 +1,7 @@
 // 1. Urusan Autentikasi
 const users = [
   { username: "admin", password: "admin", role: "admin" },
-  { username: "toko", password: "toko", role: "toko" },
+  { username: "toko", password: "toko", role: "toko mas ari" },
 ];
 
 const authHandler = {
